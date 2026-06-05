@@ -1,0 +1,7 @@
+fa sc fa sc d
+fa scc faa scc d
+faa scc faa scc d
+fa _ fb _ d
+faa _ fb _ d
+#
+scscsccscc
