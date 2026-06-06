@@ -1,27 +1,139 @@
-# Máquina de Turing Universal (MTU)
+# Máquina de Turing Universal (MTU) em Ruby
 
-Este projeto implementa uma simulação simples de uma Máquina de Turing Universal em Ruby. A ideia é carregar a definição de transições e a fita de entrada a partir de um arquivo de cenário, executar passo a passo e determinar se a cadeia é aceita ou rejeitada.
+Este repositório implementa uma Máquina de Turing Universal (MTU) em Ruby, usada para simular uma Máquina de Turing M rodando sobre uma fita de entrada w. O projeto foi feito sem dependências externas e com foco em ensino e experimentação.
 
-## Estrutura do projeto
-
-- `mtu.rb` - Classe principal que representa a Máquina de Turing Universal, suas transições, fita e execução.
-- `testar_unitario.rb` - Script para executar um único cenário de teste. Pode usar um arquivo de entrada padrão ou um caminho passado por argumento.
-- `testar-todos.rb` - Script para executar uma suíte de testes com três cenários predefinidos.
-- `entradas/` - Pasta contendo arquivos de cenário com a definição da máquina e a fita de entrada.
+---
 
 ## Requisitos
 
-- Ruby instalado no seu sistema.
-- Executar os scripts a partir da pasta raiz do repositório `maquina-turing-universal`.
+- Ruby instalado (versão 2.5+ recomendada).
 
-## Formato dos arquivos de cenário
+---
 
-Cada arquivo de cenário deve ter duas seções separadas pelo caractere `#`:
+## Estrutura do projeto
 
-1. Definição de transições
-2. Fita de entrada
+```text
+.
+├── mtu.rb                 # Núcleo da MTU (simulador)
+├── testar-todos.rb        # Executa a suíte de testes definida em `entradas/`
+├── testar_unitario.rb     # Executa um único arquivo de entrada para depuração
+├── entradas/              # Arquivos de entrada (regras + cadeia)
+│   ├── livre_contexto.txt
+│   ├── regular.txt
+│   ├── sensivel.txt
+│   └── teste1.txt
+└── README.md
+```
 
-### Exemplo
+Observação: os scripts usam a pasta `entradas/`.
+
+---
+
+## Formato de arquivo de entrada
+
+Cada arquivo em `entradas/` deve conter duas partes separadas por `#`:
+
+- à esquerda: as regras de transição da máquina;
+- à direita: a cadeia de entrada codificada.
+
+A parte de regras pode ocupar várias linhas. A cadeia aparece depois do `#`.
+
+Exemplo:
+
+```text
+fa sc faa scccc d
+faa scc fa scc e
+...                # outras transições
+# sc sc scc scc    # cadeia codificada
+```
+
+Cada transição deve ter 5 campos separados por espaço:
+
+- Estado atual (ex: `fa`, `faa`)
+- Símbolo lido (ex: `sc`, `scc`, `_`)
+- Estado destino (ex: `faa`, `fb`)
+- Símbolo escrito (ex: `scccc`, `_`)
+- Movimento (`d` = direita, `e` = esquerda)
+
+Observação: o campo de movimento aceita apenas `d` ou `e`.
+
+### Mapeamento recomendado de símbolos
+
+- `sc` → `a`
+- `scc` → `b`
+- `sccc` → `c`
+- `scccc` → marcador X
+- `sccccc` → marcador Y
+- `scccccc` → marcador Z
+- `_` → espaço branco (fita vazia)
+
+---
+
+## Exemplo prático: criar uma entrada para a linguagem regular `a*b*`
+
+Crie o arquivo `entradas/exemplo_regular.txt` com o conteúdo abaixo:
+
+```text
+fa sc fa sc d
+fa scc fb scc d
+fb scc fb scc d
+# sc sc scc scc
+```
+
+Neste exemplo:
+
+- as primeiras linhas são as transições da máquina;
+- a linha com `#` separa as transições da cadeia de entrada;
+- a cadeia `sc sc scc scc` representa `aabb`.
+
+### Como rodar
+
+```bash
+ruby testar_unitario.rb entradas/exemplo_regular.txt
+```
+
+Para executar todos os testes:
+
+```bash
+ruby testar-todos.rb
+```
+
+---
+
+## Como funciona `entradas/livre_contexto.txt`
+
+Este arquivo contém as transições de uma máquina que aceita a linguagem livre de contexto `a^n b^n`.
+
+- A primeira parte do arquivo traz as transições.
+- A linha `#` separa as transições da cadeia de entrada.
+- A segunda parte traz a cadeia codificada.
+
+No arquivo atual, a cadeia é escrita como `scscsccscc`.
+
+Isso corresponde, em tokens, a:
+
+- `sc` → `a`
+- `sc` → `a`
+- `scc` → `b`
+- `scc` → `b`
+
+Ou seja, a cadeia lógica é `aabb`.
+
+> Observação: alguns arquivos usam a forma com espaços, como `sc sc scc scc`. Ambos os formatos representam a mesma sequência, desde que o parser aceite a leitura correta.
+
+---
+
+## Dicas rápidas
+
+- Use espaços entre símbolos para facilitar a leitura (`sc sc scc`).
+- Garanta que o arquivo contenha apenas um `#` separando transições e cadeia.
+- Se o programa terminar sem encontrar uma regra válida, a cadeia é rejeitada.
+
+---
+
+## Exemplo de arquivo `entradas/regular.txt`
+
+Este exemplo mostra como uma máquina pode ler a cadeia `aabb` e aceitar o final da fita.
 
 ```text
 fa sc fa sc d
@@ -29,67 +141,24 @@ fa scc faa scc d
 faa scc faa scc d
 fa _ fb _ d
 faa _ fb _ d
-#
-scscsccscc
+
+# sc sc scc scc
 ```
 
-Cada linha de transição deve conter exatamente 5 campos separados por espaços:
+Explicação do fluxo:
 
-- `origem` - estado atual
-- `lido` - símbolo lido na fita
-- `destino` - próximo estado
-- `escrito` - símbolo a ser escrito na fita
-- `movimento` - direção do ponteiro (`d` para direita, `e` para esquerda)
+- o motor lê `sc` (a) e `scc` (b);
+- ao alcançar `_`, ele vai para o estado final `fb`;
+- se chegar a um estado de aceitação válido, a cadeia é aceita.
 
-A fita de entrada aparece após o `#` e pode conter símbolos como `sc`, `scc` e `_`.
+---
 
-## Como rodar
+## Sobre os exemplos obrigatórios
 
-### Executar um teste único
+1. `entradas/livre_contexto.txt`
+   - Cadeia codificada: `scscsccscc` (corresponde a `aabb`).
+   - Lógica: busca um `a` (`sc`), marca-o como `X` e encontra o `b` correspondente (`scc`), marcando-o como `Y`.
 
-```bash
-ruby testar_unitario.rb entradas/teste1.txt
-```
-
-Se nenhum argumento for passado, o script usa por padrão o arquivo `entradas/teste1.txt`.
-
-### Executar a suíte de testes
-
-```bash
-ruby testar-todos.rb
-```
-
-Este script executa três cenários predefinidos que cobrem exemplos de linguagens:
-
-- Regular: `a*b*`
-- Livre de contexto: `a^n b^n`
-- Sensível ao contexto: `a^n b^n c^n`
-
-## O que cada arquivo faz
-
-- `mtu.rb`
-  - Define a classe `Transicao` para representar uma transição da máquina.
-  - Define a classe `MTU`, que carrega cenários, busca transições, atualiza a fita, e executa a máquina até aceitar ou rejeitar.
-  - Exibe a configuração passo a passo durante a simulação.
-
-- `testar_unitario.rb`
-  - Abre um arquivo de cenário especificado por argumento ou usa o cenário padrão.
-  - Exibe as transições carregadas.
-  - Executa a máquina passo a passo e mostra se a cadeia foi aceita ou rejeitada.
-
-- `testar-todos.rb`
-  - Executa vários cenários em sequência.
-  - Compara o resultado obtido com o resultado esperado.
-  - Exibe um resumo de quantos testes passaram e quantos falharam.
-
-## Observações
-
-- O programa lê o arquivo de cenário inteiro como uma string, separa as transições e a entrada pelo `#`, e converte a cadeia em símbolos na fita.
-- A máquina aceita um estado se o estado atual começar com `fb`.
-- A fita é estendida automaticamente com `_` quando o ponteiro se move além do comprimento disponível.
-
-## Dicas
-
-- Edite ou adicione novos cenários em `entradas/` para testar outras máquinas.
-- Use `ruby testar_unitario.rb entradas/arquivo.txt` para validar um único caso específico.
-- Para ver todos os casos obrigatórios juntos, use `ruby testar-todos.rb`.
+2. `entradas/sensivel.txt`
+   - Cadeia codificada: `scscsccsccscccsccc` (corresponde a `aabbcc`).
+   - Lógica: marca `a`, depois `b`, depois `c`; repete o ciclo até todos os símbolos estarem balanceados.
