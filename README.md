@@ -16,7 +16,7 @@
 ## 📜 Sobre o projeto
 
 A **Máquina de Turing Universal (MTU)**, proposta por Alan Turing em 1936, é uma
-M�quina de Turing especial: em vez de resolver um problema fixo, ela recebe na
+Máquina de Turing especial: em vez de resolver um problema fixo, ela recebe na
 fita a **descrição de outra máquina `M`** seguida de uma **cadeia de entrada `w`**,
 e então **simula `M` rodando sobre `w`**. É a prova de que uma única máquina pode
 executar qualquer algoritmo computável.
@@ -50,21 +50,21 @@ Toda a entrada da MTU é uma **única cadeia** sobre o alfabeto da codificação
 | Movimento do cabeçote | — | `d` (direita), `e` (esquerda) |
 | Separador `C(M)` / `w` | — | `#` |
 
-Cada transição `(origem, lido) → (destino, escrito, movimento)` é codificada pela
-**concatenação direta** dos cinco campos:
+Cada transição `(origem, lido) -> (destino, escrito, movimento)` é codificada
+pela **concatenação direta** dos cinco campos:
 
 ```
-(fa, sc) → (fa, sc, d)        ⇒     fascfascd
-(faaaa, _) → (fb, _, d)       ⇒     faaaa_fb_d
+(fa, sc)    -> (fa, sc, d)     =>   fascfascd
+(faaaa, _)  -> (fb, _, d)      =>   faaaa_fb_d
 ```
 
 A codificação é **auto-delimitável**, então a MTU sabe onde cada token começa e
 termina lendo um caractere por vez:
 
 ```
- f → começa um ESTADO          s → começa um SÍMBOLO
- _ → símbolo branco completo    d / e → movimento
- # → separa C(M) de w
+ f  ->  começa um ESTADO          s      ->  começa um SÍMBOLO
+ _  ->  símbolo branco completo   d / e  ->  movimento
+ #  ->  separa C(M) de w
 ```
 
 ---
@@ -72,27 +72,29 @@ termina lendo um caractere por vez:
 ## 🧩 Como funciona — duas fases
 
 ```
-       FITA DA MTU:   fascfascd ... fa_fb_d # scscsccscc
-                      └──────── C(M) ───────┘ └─── w ───┘
-                                  │
-            ┌─────────────────────┴─────────────────────┐
-            ▼                                             ▼
-  ① LEITURA / DECODIFICAÇÃO                    ② SIMULAÇÃO de M sobre w
-  A MTU anda pela fita com seus                 A MTU executa M: lê a fita,
-  estados internos                              escreve, troca de estado e
-  (ler_origem → ler_lido →                      move o cabeçote (d/e).
-   ler_destino → ler_escrito →
-   ler_movimento → ler_w)                       ACEITA  → M chega a um estado
-  e monta a LISTA de transições.                          de aceitação (fb…)
-                                                REJEITA → não há transição
+   FITA DA MTU:   fascfascd ... fa_fb_d # scscsccscc
+                  \____________________/ \__________/
+                          C(M)                 w
+                            |
+        +-------------------+-------------------+
+        |                                       |
+        v                                       v
+  (1) LEITURA / DECODIFICACAO            (2) SIMULACAO de M sobre w
+  A MTU anda pela fita com seus           A MTU executa M: le a fita,
+  estados internos                        escreve, troca de estado e
+  (ler_origem -> ler_lido ->              move o cabecote (d/e).
+   ler_destino -> ler_escrito ->
+   ler_movimento -> ler_w)                ACEITA  -> M chega a um estado
+  e monta a LISTA de transicoes.                     de aceitacao (fb...)
+                                          REJEITA -> nao ha transicao
 ```
 
-**① Leitura (a parte "universal"):** começando em `ler_origem`, a MTU consome um
-caractere por passo, move o cabeçote para a direita e, ao completar os cinco
+**(1) Leitura (a parte "universal"):** começando em `ler_origem`, a MTU consome
+um caractere por passo, move o cabeçote para a direita e, ao completar os cinco
 campos de uma regra, registra essa transição de `M` numa **lista** (não em
 tabela/hash). Ao encontrar `#`, passa a ler a cadeia `w`.
 
-**② Simulação:** a MTU roda `M` sobre `w` como uma Máquina de Turing comum.
+**(2) Simulação:** a MTU roda `M` sobre `w` como uma Máquina de Turing comum.
 A cadeia é **aceita** quando `M` atinge um estado de aceitação (que começa com
 `fb`) e **rejeitada** quando não existe transição aplicável.
 
@@ -106,10 +108,10 @@ A cadeia é **aceita** quando `M` atinge um estado de aceitação (que começa c
 ├── testar-todos.rb        # Roda os 3 cenários obrigatórios e gera um relatório
 ├── testar_unitario.rb     # Roda um único arquivo, mostrando a MTU lendo a fita
 ├── entradas/              # Cenários no formato C(M)#w (uma linha cada)
-│   ├── regular.txt        #   Linguagem Regular            →  a*b*
-│   ├── livre_contexto.txt #   Linguagem Livre de Contexto  →  aⁿbⁿ
-│   ├── sensivel.txt       #   Linguagem Sensível ao Ctx.   →  aⁿbⁿcⁿ
-│   ├── teste1.txt         #   Caso extra (aⁿbⁿ com a³b²)
+│   ├── regular.txt        #   Linguagem Regular            ->  a*b*
+│   ├── livre_contexto.txt #   Linguagem Livre de Contexto  ->  a^n b^n
+│   ├── sensivel.txt       #   Linguagem Sensível ao Ctx.   ->  a^n b^n c^n
+│   ├── teste1.txt         #   Caso extra (a^n b^n com a^3 b^2)
 │   └── teste_erro.txt     #   Caso extra de rejeição
 └── README.md
 ```
@@ -120,7 +122,8 @@ Cada arquivo é **uma linha** no formato `C(M)#w`:
 
 ```text
 fascfascdfasccfaasccdfaasccfaasccdfa_fb_dfaa_fb_d#scscsccscc
-└──────────────────── C(M) ─────────────────────┘ └─── w ───┘
+\_______________________________________________/ \________/
+                      C(M)                              w
 ```
 
 > Espaços e quebras de linha, se você quiser usar para facilitar a leitura, são
@@ -150,18 +153,18 @@ ruby testar_unitario.rb entradas/sensivel.txt
 
 | # | Classe | Linguagem | Arquivo | Cadeia testada | Resultado |
 |---|--------|-----------|---------|----------------|-----------|
-| 1 | Regular | `a*b*` | `entradas/regular.txt` | `aabb` | ✔️ aceita |
-| 2 | Livre de Contexto | `aⁿbⁿ` | `entradas/livre_contexto.txt` | `aabb` | ✔️ aceita |
-| 3 | Sensível ao Contexto | `aⁿbⁿcⁿ` | `entradas/sensivel.txt` | `aabbcc` | ✔️ aceita |
+| 1 | Regular | `a*b*` | `entradas/regular.txt` | `aabb` | aceita |
+| 2 | Livre de Contexto | `a^n b^n` | `entradas/livre_contexto.txt` | `aabb` | aceita |
+| 3 | Sensível ao Contexto | `a^n b^n c^n` | `entradas/sensivel.txt` | `aabbcc` | aceita |
 
-Mapeamento dos símbolos nos exemplos: `sc → a`, `scc → b`, `sccc → c`
+Mapeamento dos símbolos nos exemplos: `sc -> a`, `scc -> b`, `sccc -> c`
 (os símbolos maiores — `scccc`, `sccccc`, `scccccc` — são marcadores internos
 que cada máquina usa para "riscar" os símbolos já casados).
 
-- **`aⁿbⁿ`** — marca cada `a`, procura o `b` correspondente, marca-o, e volta;
-  repete até equilibrar. Sobra de `a` ou de `b` ⇒ rejeita.
-- **`aⁿbⁿcⁿ`** — mesma ideia em três tempos: casa um `a`, um `b` e um `c` por
-  ciclo, até todos estarem balanceados.
+- **`a^n b^n`** — marca cada `a`, procura o `b` correspondente, marca-o, e volta;
+  repete até equilibrar. Sobra de `a` ou de `b` significa rejeição.
+- **`a^n b^n c^n`** — mesma ideia em três tempos: casa um `a`, um `b` e um `c`
+  por ciclo, até todos estarem balanceados.
 
 ---
 
@@ -172,11 +175,11 @@ $ ruby testar_unitario.rb entradas/regular.txt
 ```
 
 ```text
-  [MTU] passo 0  cursor=0  estado=ler_origem  lê 'f'
-  [MTU] passo 1  cursor=1  estado=ler_origem  lê 'a'
-  [MTU] passo 2  cursor=2  estado=ler_origem  lê 's'
+  [MTU] passo 0  cursor=0  estado=ler_origem  le 'f'
+  [MTU] passo 1  cursor=1  estado=ler_origem  le 'a'
+  [MTU] passo 2  cursor=2  estado=ler_origem  le 's'
   ...
-  [MTU] -> transição decodificada: (fa,sc) -> (fa,sc,d)
+  [MTU] -> transicao decodificada: (fa,sc) -> (fa,sc,d)
   ...
 Estado Atual : fb
 Fita         : sc sc scc scc _
