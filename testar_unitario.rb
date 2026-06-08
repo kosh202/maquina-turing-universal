@@ -1,17 +1,9 @@
+# encoding: utf-8
 require_relative 'mtu'
 
-# Captura o primeiro argumento passado no terminal (ex: entradas/sensivel.txt)
-# Se não houver argumento, usa o arquivo de teste padrão.
-caminho_arquivo = ARGV[0] || File.join(__dir__, 'entradas', 'teste1.txt')
-
-if caminho_arquivo.empty?
-  puts "=================================================================="
-  puts "ERRO: Você precisa passar o caminho do arquivo de teste!"
-  puts "Exemplo de uso:"
-  puts "  ruby testar_unitario.rb entradas/livre_contexto.txt"
-  puts "=================================================================="
-  exit
-end
+# Captura o primeiro argumento (ex: entradas/sensivel.txt).
+# Sem argumento, usa um arquivo padrão.
+caminho_arquivo = ARGV[0] || File.join(__dir__, 'entradas', 'regular.txt')
 
 puts "=================================================="
 puts "         EXECUTANDO TESTE INDIVIDUAL DA MTU       "
@@ -19,14 +11,19 @@ puts "=================================================="
 puts "Arquivo selecionado: #{caminho_arquivo}"
 puts "--------------------------------------------------"
 
-# Instancia e roda a máquina isoladamente
 mtu = MTU.new
+mtu.verbose = true  # mostra a MTU lendo a fita C(M)#w caractere a caractere
+
+puts "--- A MTU lê a fita como uma Máquina de Turing e decodifica ---"
 mtu.carregar_cenario(caminho_arquivo)
 
-puts "--- Transições Carregadas do Arquivo ---"
+puts
+mtu.mostrar_fita_mtu
+puts
+puts "--- Transições de M decodificadas a partir da fita ---"
 mtu.mostrar_transicoes
 puts "=================================================="
-puts "Iniciando a execução passo a passo..."
+puts "Iniciando a simulação de M sobre w (passo a passo)..."
 puts "--------------------------------------------------"
 
 resultado = mtu.executar

@@ -1,12 +1,1 @@
-fa sc faa scccc d
-faa sc faa sc d
-faa sccccc faa sccccc d
-faa scc faaa sccccc e
-faaa sccccc faaa sccccc e
-faaa sc faaa sc e
-faaa scccc fa scccc d
-fa sccccc faaaa sccccc d
-faaaa sccccc faaaa sccccc d
-faaaa _ fb _ d
-#
-scscscsccscc
+fascfaasccccdfaascfaascdfaascccccfaascccccdfaasccfaaascccccefaaascccccfaaascccccefaaascfaaascefaaasccccfasccccdfascccccfaaaascccccdfaaaascccccfaaaascccccdfaaaa_fb_d#scscscsccscc

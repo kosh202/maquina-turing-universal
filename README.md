@@ -1,164 +1,198 @@
-# Máquina de Turing Universal (MTU) em Ruby
+<h1 align="center">🧠 Máquina de Turing Universal (MTU)</h1>
 
-Este repositório implementa uma Máquina de Turing Universal (MTU) em Ruby, usada para simular uma Máquina de Turing M rodando sobre uma fita de entrada w. O projeto foi feito sem dependências externas e com foco em ensino e experimentação.
+<p align="center">
+  <i>Uma Máquina de Turing que lê, decodifica e simula <b>qualquer outra</b> Máquina de Turing.</i>
+</p>
+
+<p align="center">
+  <img alt="Ruby" src="https://img.shields.io/badge/Ruby-3.2-CC342D?logo=ruby&logoColor=white">
+  <img alt="Sem dependências" src="https://img.shields.io/badge/dependências-nenhuma-success">
+  <img alt="Testes" src="https://img.shields.io/badge/testes-3%2F3%20passando-brightgreen">
+  <img alt="Disciplina" src="https://img.shields.io/badge/Linguagens%20Formais-SENAC-blue">
+</p>
 
 ---
 
-## Requisitos
+## 📜 Sobre o projeto
 
-- Ruby instalado (versão 2.5+ recomendada).
+A **Máquina de Turing Universal (MTU)**, proposta por Alan Turing em 1936, é uma
+M�quina de Turing especial: em vez de resolver um problema fixo, ela recebe na
+fita a **descrição de outra máquina `M`** seguida de uma **cadeia de entrada `w`**,
+e então **simula `M` rodando sobre `w`**. É a prova de que uma única máquina pode
+executar qualquer algoritmo computável.
+
+Este repositório implementa uma MTU em **Ruby puro**, sem gems e sem nenhuma
+biblioteca de simulação. A linguagem reconhecida é:
+
+```
+L = { C(M)·w  ∈  Σ*  |  w ∈ L(M) }
+```
+
+onde `C(M)` é a codificação de uma Máquina de Turing `M` e `w` é uma cadeia de
+entrada qualquer para ela.
+
+> 💡 A MTU **não** carrega as regras com um parser de propósito geral: ela
+> percorre a fita **caractere a caractere**, com um cabeçote, usando **apenas
+> transições de estado** — exatamente como uma Máquina de Turing faria.
 
 ---
 
-## Estrutura do projeto
+## 🔤 Codificação
+
+Toda a entrada da MTU é uma **única cadeia** sobre o alfabeto da codificação:
+
+| Elemento | Codificação | Exemplos |
+| --- | --- | --- |
+| Estados de **não** aceitação | `f` + `a`'s | `fa`, `faa`, `faaa`, … |
+| Estados de **aceitação** | `f` + `b`'s | `fb`, `fbb`, `fbbb`, … |
+| Símbolos da fita | `s` + `c`'s | `sc`, `scc`, `sccc`, … |
+| Símbolo branco | — | `_` |
+| Movimento do cabeçote | — | `d` (direita), `e` (esquerda) |
+| Separador `C(M)` / `w` | — | `#` |
+
+Cada transição `(origem, lido) → (destino, escrito, movimento)` é codificada pela
+**concatenação direta** dos cinco campos:
+
+```
+(fa, sc) → (fa, sc, d)        ⇒     fascfascd
+(faaaa, _) → (fb, _, d)       ⇒     faaaa_fb_d
+```
+
+A codificação é **auto-delimitável**, então a MTU sabe onde cada token começa e
+termina lendo um caractere por vez:
+
+```
+ f → começa um ESTADO          s → começa um SÍMBOLO
+ _ → símbolo branco completo    d / e → movimento
+ # → separa C(M) de w
+```
+
+---
+
+## 🧩 Como funciona — duas fases
+
+```
+       FITA DA MTU:   fascfascd ... fa_fb_d # scscsccscc
+                      └──────── C(M) ───────┘ └─── w ───┘
+                                  │
+            ┌─────────────────────┴─────────────────────┐
+            ▼                                             ▼
+  ① LEITURA / DECODIFICAÇÃO                    ② SIMULAÇÃO de M sobre w
+  A MTU anda pela fita com seus                 A MTU executa M: lê a fita,
+  estados internos                              escreve, troca de estado e
+  (ler_origem → ler_lido →                      move o cabeçote (d/e).
+   ler_destino → ler_escrito →
+   ler_movimento → ler_w)                       ACEITA  → M chega a um estado
+  e monta a LISTA de transições.                          de aceitação (fb…)
+                                                REJEITA → não há transição
+```
+
+**① Leitura (a parte "universal"):** começando em `ler_origem`, a MTU consome um
+caractere por passo, move o cabeçote para a direita e, ao completar os cinco
+campos de uma regra, registra essa transição de `M` numa **lista** (não em
+tabela/hash). Ao encontrar `#`, passa a ler a cadeia `w`.
+
+**② Simulação:** a MTU roda `M` sobre `w` como uma Máquina de Turing comum.
+A cadeia é **aceita** quando `M` atinge um estado de aceitação (que começa com
+`fb`) e **rejeitada** quando não existe transição aplicável.
+
+---
+
+## 📁 Estrutura
 
 ```text
 .
-├── mtu.rb                 # Núcleo da MTU (simulador)
-├── testar-todos.rb        # Executa a suíte de testes definida em `entradas/`
-├── testar_unitario.rb     # Executa um único arquivo de entrada para depuração
-├── entradas/              # Arquivos de entrada (regras + cadeia)
-│   ├── livre_contexto.txt
-│   ├── regular.txt
-│   ├── sensivel.txt
-│   └── teste1.txt
+├── mtu.rb                 # A MTU: lê C(M)#w da fita, decodifica M e simula M sobre w
+├── testar-todos.rb        # Roda os 3 cenários obrigatórios e gera um relatório
+├── testar_unitario.rb     # Roda um único arquivo, mostrando a MTU lendo a fita
+├── entradas/              # Cenários no formato C(M)#w (uma linha cada)
+│   ├── regular.txt        #   Linguagem Regular            →  a*b*
+│   ├── livre_contexto.txt #   Linguagem Livre de Contexto  →  aⁿbⁿ
+│   ├── sensivel.txt       #   Linguagem Sensível ao Ctx.   →  aⁿbⁿcⁿ
+│   ├── teste1.txt         #   Caso extra (aⁿbⁿ com a³b²)
+│   └── teste_erro.txt     #   Caso extra de rejeição
 └── README.md
 ```
 
-Observação: os scripts usam a pasta `entradas/`.
+### Formato do arquivo de entrada
+
+Cada arquivo é **uma linha** no formato `C(M)#w`:
+
+```text
+fascfascdfasccfaasccdfaasccfaasccdfa_fb_dfaa_fb_d#scscsccscc
+└──────────────────── C(M) ─────────────────────┘ └─── w ───┘
+```
+
+> Espaços e quebras de linha, se você quiser usar para facilitar a leitura, são
+> ignorados pela MTU.
 
 ---
 
-## Formato de arquivo de entrada
+## ▶️ Como rodar
 
-Cada arquivo em `entradas/` deve conter duas partes separadas por `#`:
+Pré-requisito: **Ruby** instalado (`ruby -v`).
 
-- à esquerda: as regras de transição da máquina;
-- à direita: a cadeia de entrada codificada.
-
-A parte de regras pode ocupar várias linhas. A cadeia aparece depois do `#`.
-
-Exemplo:
-
-```text
-fa sc faa scccc d
-faa scc fa scc e
-...                # outras transições
-# sc sc scc scc    # cadeia codificada
-```
-
-Cada transição deve ter 5 campos separados por espaço:
-
-- Estado atual (ex: `fa`, `faa`)
-- Símbolo lido (ex: `sc`, `scc`, `_`)
-- Estado destino (ex: `faa`, `fb`)
-- Símbolo escrito (ex: `scccc`, `_`)
-- Movimento (`d` = direita, `e` = esquerda)
-
-Observação: o campo de movimento aceita apenas `d` ou `e`.
-
-### Mapeamento recomendado de símbolos
-
-- `sc` → `a`
-- `scc` → `b`
-- `sccc` → `c`
-- `scccc` → marcador X
-- `sccccc` → marcador Y
-- `scccccc` → marcador Z
-- `_` → espaço branco (fita vazia)
-
----
-
-## Exemplo prático: criar uma entrada para a linguagem regular `a*b*`
-
-Crie o arquivo `entradas/exemplo_regular.txt` com o conteúdo abaixo:
-
-```text
-fa sc fa sc d
-fa scc fb scc d
-fb scc fb scc d
-# sc sc scc scc
-```
-
-Neste exemplo:
-
-- as primeiras linhas são as transições da máquina;
-- a linha com `#` separa as transições da cadeia de entrada;
-- a cadeia `sc sc scc scc` representa `aabb`.
-
-### Como rodar
-
-```bash
-ruby testar_unitario.rb entradas/exemplo_regular.txt
-```
-
-Para executar todos os testes:
+Rodar os três cenários obrigatórios:
 
 ```bash
 ruby testar-todos.rb
 ```
 
----
+Rodar um cenário específico, com o passo a passo da MTU lendo a fita e simulando `M`:
 
-## Como funciona `entradas/livre_contexto.txt`
-
-Este arquivo contém as transições de uma máquina que aceita a linguagem livre de contexto `a^n b^n`.
-
-- A primeira parte do arquivo traz as transições.
-- A linha `#` separa as transições da cadeia de entrada.
-- A segunda parte traz a cadeia codificada.
-
-No arquivo atual, a cadeia é escrita como `scscsccscc`.
-
-Isso corresponde, em tokens, a:
-
-- `sc` → `a`
-- `sc` → `a`
-- `scc` → `b`
-- `scc` → `b`
-
-Ou seja, a cadeia lógica é `aabb`.
-
-> Observação: alguns arquivos usam a forma com espaços, como `sc sc scc scc`. Ambos os formatos representam a mesma sequência, desde que o parser aceite a leitura correta.
-
----
-
-## Dicas rápidas
-
-- Use espaços entre símbolos para facilitar a leitura (`sc sc scc`).
-- Garanta que o arquivo contenha apenas um `#` separando transições e cadeia.
-- Se o programa terminar sem encontrar uma regra válida, a cadeia é rejeitada.
-
----
-
-## Exemplo de arquivo `entradas/regular.txt`
-
-Este exemplo mostra como uma máquina pode ler a cadeia `aabb` e aceitar o final da fita.
-
-```text
-fa sc fa sc d
-fa scc faa scc d
-faa scc faa scc d
-fa _ fb _ d
-faa _ fb _ d
-
-# sc sc scc scc
+```bash
+ruby testar_unitario.rb entradas/sensivel.txt
 ```
 
-Explicação do fluxo:
+---
 
-- o motor lê `sc` (a) e `scc` (b);
-- ao alcançar `_`, ele vai para o estado final `fb`;
-- se chegar a um estado de aceitação válido, a cadeia é aceita.
+## ✅ Cenários obrigatórios
+
+| # | Classe | Linguagem | Arquivo | Cadeia testada | Resultado |
+|---|--------|-----------|---------|----------------|-----------|
+| 1 | Regular | `a*b*` | `entradas/regular.txt` | `aabb` | ✔️ aceita |
+| 2 | Livre de Contexto | `aⁿbⁿ` | `entradas/livre_contexto.txt` | `aabb` | ✔️ aceita |
+| 3 | Sensível ao Contexto | `aⁿbⁿcⁿ` | `entradas/sensivel.txt` | `aabbcc` | ✔️ aceita |
+
+Mapeamento dos símbolos nos exemplos: `sc → a`, `scc → b`, `sccc → c`
+(os símbolos maiores — `scccc`, `sccccc`, `scccccc` — são marcadores internos
+que cada máquina usa para "riscar" os símbolos já casados).
+
+- **`aⁿbⁿ`** — marca cada `a`, procura o `b` correspondente, marca-o, e volta;
+  repete até equilibrar. Sobra de `a` ou de `b` ⇒ rejeita.
+- **`aⁿbⁿcⁿ`** — mesma ideia em três tempos: casa um `a`, um `b` e um `c` por
+  ciclo, até todos estarem balanceados.
 
 ---
 
-## Sobre os exemplos obrigatórios
+## 🔍 Exemplo de execução
 
-1. `entradas/livre_contexto.txt`
-   - Cadeia codificada: `scscsccscc` (corresponde a `aabb`).
-   - Lógica: busca um `a` (`sc`), marca-o como `X` e encontra o `b` correspondente (`scc`), marcando-o como `Y`.
+```bash
+$ ruby testar_unitario.rb entradas/regular.txt
+```
 
-2. `entradas/sensivel.txt`
-   - Cadeia codificada: `scscsccsccscccsccc` (corresponde a `aabbcc`).
-   - Lógica: marca `a`, depois `b`, depois `c`; repete o ciclo até todos os símbolos estarem balanceados.
+```text
+  [MTU] passo 0  cursor=0  estado=ler_origem  lê 'f'
+  [MTU] passo 1  cursor=1  estado=ler_origem  lê 'a'
+  [MTU] passo 2  cursor=2  estado=ler_origem  lê 's'
+  ...
+  [MTU] -> transição decodificada: (fa,sc) -> (fa,sc,d)
+  ...
+Estado Atual : fb
+Fita         : sc sc scc scc _
+CADEIA ACEITA!
+```
+
+---
+
+## 🚫 Restrições respeitadas
+
+- ✔️ Repositório **exclusivo** para este trabalho.
+- ✔️ Codificação **exatamente** no formato especificado.
+- ✔️ Máquinas e entradas em **arquivos separados**.
+- ✔️ **Sem** gems ou bibliotecas de simulação de Máquina de Turing.
+- ✔️ **Sem** tabelas/hash na lógica da MTU — apenas transições de estado.
+
+---
+
+<p align="center"><sub>Disciplina de Linguagens Formais e Autômatos</sub></p>
